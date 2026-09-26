@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DoraHR MBA Assistant</title>
-  <meta name="description" content="AI assistant for MBA projects, internship reports, questionnaires, viva preparation and HR research.">
+  <title>About DoraHR - MBA HR Assistant</title>
+  <meta name="description" content="Learn about DoraHR, an educational AI assistant dedicated to MBA HR students, researchers, and project preparation.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -128,137 +128,119 @@
     /* MAIN CONTENT */
     main {
       flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       padding: 40px 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
-    .container {
-      background: white;
-      padding: 40px;
-      border-radius: 16px;
-      max-width: 680px;
-      width: 100%;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+    .about-card {
+      background: var(--surface);
       border: 1px solid var(--border);
-      text-align: center;
-    }
-
-    .badge-tag {
-      display: inline-block;
-      background: #eff6ff;
-      color: #1d4ed8;
-      font-weight: 600;
-      font-size: 0.82rem;
-      padding: 5px 12px;
-      border-radius: 20px;
-      margin-bottom: 16px;
-      border: 1px solid #bfdbfe;
+      border-radius: 16px;
+      max-width: 760px;
+      width: 100%;
+      padding: 40px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
     }
 
     h1 {
-      font-size: 2rem;
+      font-size: 1.85rem;
       font-weight: 700;
       color: #0f172a;
-      margin-bottom: 12px;
-      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+      letter-spacing: -0.01em;
     }
 
-    .subtitle {
-      font-size: 1.05rem;
-      color: #475569;
+    .lead-text {
+      font-size: 1.1rem;
+      line-height: 1.7;
+      color: #334155;
       margin-bottom: 24px;
     }
 
-    .features-list {
-      background: #f8fafc;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px 24px;
-      margin: 0 auto 30px auto;
-      text-align: left;
-      list-style-type: none;
+    .section-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #1e3a8a;
+      margin: 24px 0 12px 0;
+    }
+
+    .capabilities-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 12px;
-    }
-
-    .features-list li {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 0.95rem;
-      color: #334155;
-      font-weight: 500;
-    }
-
-    .features-list li::before {
-      content: "✓";
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 20px;
-      height: 20px;
-      background: #dbeafe;
-      color: #1d4ed8;
-      border-radius: 50%;
-      font-size: 0.75rem;
-      font-weight: 700;
-      flex-shrink: 0;
-    }
-
-    .button-group {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
       gap: 14px;
-      margin-top: 10px;
+      margin-bottom: 28px;
+    }
+
+    .cap-item {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+    }
+
+    .cap-item h3 {
+      font-size: 0.98rem;
+      font-weight: 700;
+      color: #1e40af;
+      margin-bottom: 6px;
+    }
+
+    .cap-item p {
+      font-size: 0.88rem;
+      color: #64748b;
+      line-height: 1.5;
+    }
+
+    .disclaimer-box {
+      background: #f1f5f9;
+      border-left: 4px solid #64748b;
+      padding: 14px 18px;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      color: #475569;
+      line-height: 1.5;
+      margin-bottom: 28px;
+    }
+
+    .cta-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
     }
 
     .btn-primary {
       background: var(--primary);
       color: white;
-      padding: 14px 28px;
-      border: none;
-      border-radius: 10px;
-      font-size: 1.05rem;
+      padding: 12px 24px;
+      border-radius: 8px;
       font-weight: 600;
-      cursor: pointer;
       text-decoration: none;
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+      transition: all 0.15s ease;
     }
 
     .btn-primary:hover {
       background: var(--primary-dark);
-      transform: translateY(-2px);
-      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+      transform: translateY(-1px);
     }
 
     .btn-secondary {
-      background: #ffffff;
-      color: #1e40af;
-      padding: 14px 28px;
-      border: 1.5px solid #bfdbfe;
-      border-radius: 10px;
-      font-size: 1.05rem;
+      background: white;
+      color: #334155;
+      border: 1px solid var(--border);
+      padding: 12px 20px;
+      border-radius: 8px;
       font-weight: 600;
-      cursor: pointer;
       text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.2s ease;
+      transition: all 0.15s ease;
     }
 
     .btn-secondary:hover {
-      background: #eff6ff;
-      border-color: #2563eb;
-      transform: translateY(-2px);
+      background: #f8fafc;
     }
 
     footer {
@@ -271,17 +253,15 @@
     }
 
     @media (max-width: 600px) {
-      .container {
+      .about-card {
         padding: 24px 18px;
       }
-      h1 {
-        font-size: 1.5rem;
-      }
-      .features-list {
+      .capabilities-grid {
         grid-template-columns: 1fr;
       }
-      .button-group {
+      .cta-row {
         flex-direction: column;
+        width: 100%;
       }
       .btn-primary, .btn-secondary {
         width: 100%;
@@ -309,41 +289,49 @@
     </a>
 
     <nav>
-      <a href="/" class="nav-link active">Home</a>
+      <a href="/" class="nav-link">Home</a>
       <a href="/chat" class="nav-link">Chat</a>
-      <a href="/about" class="nav-link">About</a>
+      <a href="/about" class="nav-link active">About</a>
     </nav>
   </header>
 
-  <!-- MAIN CONTAINER -->
+  <!-- MAIN -->
   <main>
-    <div class="container">
-      <div class="badge-tag">Academic & Professional HR Assistant</div>
-      <h1>DoraHR MBA Assistant</h1>
-      
-      <p class="subtitle">
-        Your dedicated AI assistant for MBA studies, research projects, and HR management concepts:
+    <div class="about-card">
+      <h1>About DoraHR</h1>
+
+      <p class="lead-text">
+        DoraHR is an MBA-focused HR assistant designed to help students understand HR concepts, prepare academic projects, create questionnaires, work on internship reports, prepare for viva examinations and learn practical HR concepts.
       </p>
 
-      <ul class="features-list">
-        <li>MBA Projects</li>
-        <li>Internship Reports</li>
-        <li>Literature Reviews</li>
-        <li>Questionnaires</li>
-        <li>Labour Laws</li>
-        <li>Viva Preparation</li>
-      </ul>
+      <div class="section-title">Key Academic Support Areas</div>
 
-      <div class="button-group">
-        <!-- Original button repaired with proper /chat route -->
-        <a href="/chat" class="btn-primary" id="chatButton">
-          Chat with DoraHR
-        </a>
+      <div class="capabilities-grid">
+        <div class="cap-item">
+          <h3>📊 MBA Projects & Dissertations</h3>
+          <p>Guidance on research topics, SMART objectives, sampling methods, Likert questionnaires, statistical tools, and project viva preparation.</p>
+        </div>
+        <div class="cap-item">
+          <h3>💼 Internship Reports</h3>
+          <p>Structuring executive summaries, industry profiles, HR workflow descriptions, weekly diary reflections, and learning outcomes.</p>
+        </div>
+        <div class="cap-item">
+          <h3>⚖️ Labour Laws & Compliance</h3>
+          <p>Clear explanations of the Factories Act, Industrial Disputes Act, PF, ESI, Gratuity, POSH Act 2013, and Indian Labour Codes.</p>
+        </div>
+        <div class="cap-item">
+          <h3>📈 HR Analytics & Systems</h3>
+          <p>Practical insights into HR metrics, employee turnover rate, eNPS, recruitment analytics, and SAP HCM / HRIS fundamentals.</p>
+        </div>
+      </div>
 
-        <!-- Second explicit call-to-action button as requested -->
-        <a href="/chat" class="btn-secondary" id="startChattingButton">
-          Start Chatting &rarr;
-        </a>
+      <div class="disclaimer-box">
+        <strong>Academic Notice:</strong> DoraHR is an educational learning assistant designed for study and research assistance. DoraHR is not an official product of any university or company.
+      </div>
+
+      <div class="cta-row">
+        <a href="/chat" class="btn-primary">Open Chat with DoraHR &rarr;</a>
+        <a href="/" class="btn-secondary">Return to Homepage</a>
       </div>
     </div>
   </main>

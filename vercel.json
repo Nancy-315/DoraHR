@@ -1,0 +1,8 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/chat", "destination": "/chat.html" },
+    { "source": "/about", "destination": "/about.html" },
+    { "source": "/api/chat", "destination": "/api/chat.js" }
+  ]
+}

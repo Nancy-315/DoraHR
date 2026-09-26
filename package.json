@@ -1,0 +1,19 @@
+{
+  "name": "dora-hr-mba-assistant",
+  "version": "1.0.0",
+  "description": "DoraHR - MBA HR AI Assistant for projects, reports, labour laws, and viva prep.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test-routes.js"
+  },
+  "keywords": [
+    "mba",
+    "hr",
+    "chatbot",
+    "assistant",
+    "human-resources"
+  ],
+  "author": "DoraHR",
+  "license": "MIT"
+}

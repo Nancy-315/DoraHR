@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page Not Found - DoraHR MBA Assistant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --surface: #ffffff;
+      --bg: #f8fafc;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --online: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .brand-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #2563eb, #1e40af);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+    }
+
+    .brand-info h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-main);
+      line-height: 1.2;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--online);
+      font-weight: 600;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--online);
+      border-radius: 50%;
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-link {
+      padding: 8px 14px;
+      border-radius: 6px;
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .error-container {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 48px 36px;
+      max-width: 520px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+    }
+
+    .error-code {
+      font-size: 4rem;
+      font-weight: 800;
+      color: #93c5fd;
+      line-height: 1;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 10px;
+    }
+
+    p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      margin-bottom: 28px;
+      line-height: 1.5;
+    }
+
+    .btn-back {
+      background: var(--primary);
+      color: white;
+      padding: 12px 28px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.15s ease;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+    }
+
+    .btn-back:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 18px 24px;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      background: var(--surface);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a href="/" class="brand-wrap">
+      <div class="brand-avatar">D</div>
+      <div class="brand-info">
+        <h2>DoraHR</h2>
+        <div class="status-row">
+          <span>MBA HR Assistant</span>
+          <span>•</span>
+          <span class="status-badge">
+            <span class="status-dot"></span> Online
+          </span>
+        </div>
+      </div>
+    </a>
+
+    <nav>
+      <a href="/" class="nav-link">Home</a>
+      <a href="/chat" class="nav-link">Chat</a>
+      <a href="/about" class="nav-link">About</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="error-container">
+      <div class="error-code">404</div>
+      <h1>Page Not Found</h1>
+      <p>The page you're looking for doesn't exist.</p>
+      <a href="/" class="btn-back">Back to DoraHR</a>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 DoraHR MBA Assistant • Built for MBA Students & HR Researchers</p>
+  </footer>
+
+</body>
+</html>

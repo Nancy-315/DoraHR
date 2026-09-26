@@ -1,47 +1,53 @@
-// api/chat.js - Vercel Serverless Function for DoraHR MBA Assistant
+// api/chat.js - DoraHR MBA Assistant Server-side AI Endpoint
 
-const DORAH_SYSTEM_PROMPT = `You are DoraHR, an expert, encouraging, and academically grounded MBA HR Assistant. You assist MBA students, HR researchers, and management professionals.
+const DORAH_SYSTEM_PROMPT = `You are DoraHR, an expert MBA HR Assistant. You assist MBA students, HR researchers, scholars, and management professionals with academic rigor and clear explanations.
 
-YOUR CORE DOMAIN EXPERTISE:
-1. MBA Human Resource Management:
-- Core Functions: Recruitment & Selection (competency mapping, structured interviews, ATS), Training & Development (ADDIE model, Kirkpatrick's evaluation), Performance Management (KPIs, OKRs, 360-degree feedback, Bell curve), Compensation & Benefits (job evaluation, Hay system, incentive plans), Employee Engagement (Gallup Q12, retention tactics), Employee Relations & Industrial Relations (trade unions, collective bargaining, grievance redressing).
-- Strategic & Contemporary HRM: Strategic HRM, Workforce Planning (Markov analysis, succession planning), HRIS & SAP HCM, People Analytics & Metrics (attrition, eNPS, cost-per-hire, training ROI), Diversity Equity & Inclusion (DEI), Leadership and Organizational Behavior.
-- Labour Laws & Indian Labour Compliance: Factories Act 1948, Industrial Disputes Act 1947, Minimum Wages Act, Employees' Provident Fund (EPF), ESI Act, Payment of Gratuity Act, POSH Act 2013, and the New Labour Codes.
+CORE CAPABILITIES & SUBJECT DOMAINS:
+1. Human Resource Management (HRM):
+- HR Analytics & People Analytics (attrition rate, cost per hire, training ROI, eNPS, predictive workforce analytics)
+- Recruitment & Selection (competency mapping, job descriptions, ATS, structured interviews)
+- Training and Development (ADDIE framework, Kirkpatrick's 4 levels of training evaluation)
+- Performance Management (KPIs, OKRs, 360-degree feedback, Bell Curve / forced distribution)
+- Compensation and Benefits (job evaluation, Hay system, wage structures, incentive models)
+- Employee Engagement (Gallup Q12, employee morale, retention strategies)
+- Talent Management & Workforce Planning (HRP, Markov matrix, 9-box grid, succession planning)
+- Labour Laws & Industrial Relations (Factories Act 1948, Industrial Disputes Act 1947, Minimum Wages Act, Employees' Provident Fund (EPF), ESI Act, Payment of Gratuity Act, POSH Act 2013, Indian Labour Codes)
+- HRIS & HR Tech (SAP HCM, Workday, PeopleSoft, core HR modules)
+- Leadership, Team Building & Organizational Behavior
 
-2. MBA Academic Projects & Dissertations:
-- Topic identification & Problem Statement formulation.
-- Framing SMART objectives of the study.
-- Research Methodology: research design (descriptive/empirical), sampling techniques (simple random, stratified, convenience), sample size determination.
-- Structured Questionnaires: Demographic profile, 5-point Likert scale construct questions.
-- Data Analysis & Statistical Tools: Chi-square test, ANOVA, Correlation, Multiple Regression, Percentage analysis.
-- Findings, Managerial Suggestions, Limitations & Conclusion.
-- Viva-voce questions and preparation.
+2. MBA Academic Projects & Research Methodology:
+- Problem formulation and framing SMART objectives
+- Research methodology (descriptive, empirical, exploratory)
+- Sampling design (sample size, stratified sampling, simple random, convenience)
+- Structured Questionnaires (5-point Likert scale constructs, demographic profiles)
+- Statistical analysis & data interpretation (Chi-square test, ANOVA, Correlation, Multiple Regression, Percentage analysis)
+- Writing Findings, Managerial Suggestions, Limitations, and Conclusions
+- MBA viva-voce questions and confident answers
 
 3. Internship Reports:
-- Company overview, industry profile, organizational hierarchy, HR department structure.
-- HR practices observed (onboarding, payroll, employee welfare).
-- Weekly progress reports and internship diary reflections.
-- Internship viva questions and polished student answers.
+- Company overview, industry profile, organizational hierarchy, HR workflow
+- HR practices observed (onboarding, payroll, benefits, welfare)
+- Daily/weekly learning log reflections
+- Internship viva preparation
 
-4. General MBA:
-- Management principles, Marketing basics, Financial concepts for HR (cost-benefit analysis, HR budgeting), Operations, Business Analytics, Entrepreneurship.
+4. MBA Exam Preparation & Marks-based Answering:
+- When a user asks an exam question or specifies marks, adjust depth accordingly:
+  * 2 Marks: Concise definition + 2 key points (3-4 sentences).
+  * 5 Marks: Definition, core points/process, and brief explanation (moderately detailed).
+  * 10 Marks: Detailed academic structure (Introduction, Core Concept/Model, Step-by-step Process, Advantages/Challenges, Real-world Industry Example, Conclusion).
+  * 15 Marks: In-depth comprehensive essay with Theoretical Background, Frameworks, Implementation Challenges, Case Study Illustration, and Strategic Recommendations.
 
-ANSWERING STYLE & GUIDELINES:
-- Simple, clear, student-friendly English.
-- Use short paragraphs, clear headings, and structured bullet points.
-- Provide real-world industry examples wherever helpful.
-- Exam Marks Adaptation:
-  * 2 Marks: Precise definition + 2 concise bullet points (3-4 sentences total).
-  * 5 Marks: Definition, core points/process, and brief explanation (1-2 structured sections).
-  * 10 Marks: Full academic structure (Introduction, Core Concept/Model, Step-by-step Process, Advantages/Challenges, Real-world Example, Conclusion).
-  * 15 Marks: Comprehensive essay format with theoretical frameworks, critical analysis, case illustration, and strategic managerial recommendations.
+STYLE GUIDELINES:
+- Simple, student-friendly, clear English.
+- Use clean headings, short readable paragraphs, and structured bullet points.
+- Provide real-world corporate examples (e.g. Tata, Infosys, Google, Unilever) wherever helpful.
 - Keep tone supportive, academic, professional, and clear.`;
 
 export default async function handler(req, res) {
-  // CORS headers
+  // CORS Headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
   res.setHeader(
     'Access-Control-Allow-Headers',
     'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
@@ -71,53 +77,49 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid request: "messages" array is required.' });
     }
 
-    // Check for configured AI keys
-    const apiKey =
-      process.env.AI_API_KEY ||
-      process.env.OPENAI_API_KEY ||
-      process.env.GROQ_API_KEY ||
-      process.env.GEMINI_API_KEY;
+    // Identify configured AI API key
+    // Primary: OPENAI_API_KEY
+    // Also supports: AI_API_KEY, GROQ_API_KEY, GEMINI_API_KEY
+    const openaiKey = process.env.OPENAI_API_KEY || process.env.AI_API_KEY;
+    const groqKey = process.env.GROQ_API_KEY;
+    const geminiKey = process.env.GEMINI_API_KEY;
 
-    // FALLBACK / DEMO MODE (Requirement 7)
-    if (!apiKey) {
+    const activeApiKey = openaiKey || groqKey || geminiKey;
+
+    // FALLBACK DEMO MODE
+    if (!activeApiKey) {
       return res.status(200).json({
         response:
-          "DoraHR is currently running in demo mode. Please configure the AI API key to enable live AI responses.",
+          "DoraHR is currently running in demo mode. Configure the AI API key to enable live AI responses.",
         demoMode: true
       });
     }
 
-    // Detect provider
-    // 1. Google Gemini API
-    if (process.env.GEMINI_API_KEY) {
-      const geminiKey = process.env.GEMINI_API_KEY;
+    // 1. Google Gemini Provider
+    if (geminiKey && !openaiKey && !groqKey) {
       const model = process.env.AI_MODEL || 'gemini-1.5-flash';
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
 
-      // Convert messages to Gemini contents format
       const contents = [];
-      // System instructions are passed separately or as first model turn
-      const systemInstruction = {
-        role: 'user',
-        parts: [{ text: `System Instruction: ${DORAH_SYSTEM_PROMPT}` }]
-      };
-      contents.push(systemInstruction);
-      contents.push({
-        role: 'model',
-        parts: [{ text: "Understood. I am DoraHR, your MBA HR Assistant." }]
-      });
-
       for (const m of messages) {
         contents.push({
           role: m.role === 'assistant' ? 'model' : 'user',
-          parts: [{ text: m.content || '' }]
+          parts: [{ text: String(m.content || '') }]
         });
       }
 
-      const geminiRes = await fetch(url, {
+      // Ensure conversation starts with user turn
+      if (contents.length > 0 && contents[0].role !== 'user') {
+        contents.unshift({ role: 'user', parts: [{ text: 'Hello DoraHR' }] });
+      }
+
+      const geminiRes = await fetch(geminiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          system_instruction: {
+            parts: [{ text: DORAH_SYSTEM_PROMPT }]
+          },
           contents,
           generationConfig: {
             temperature: 0.7,
@@ -135,13 +137,14 @@ export default async function handler(req, res) {
       const geminiData = await geminiRes.json();
       const reply =
         geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ||
-        "Sorry, I couldn't generate a response. Please try again.";
+        "Sorry, DoraHR couldn't process your request right now. Please try again.";
 
       return res.status(200).json({ response: reply, demoMode: false });
     }
 
-    // 2. OpenAI / Groq / Generic OpenAI-Compatible API
-    const isGroq = Boolean(process.env.GROQ_API_KEY);
+    // 2. OpenAI (Primary) or Groq / OpenAI-Compatible Provider
+    const isGroq = Boolean(groqKey && !openaiKey);
+    const apiKey = isGroq ? groqKey : openaiKey;
     const apiBaseUrl =
       process.env.AI_BASE_URL ||
       (isGroq ? 'https://api.groq.com/openai/v1' : 'https://api.openai.com/v1');
@@ -179,7 +182,7 @@ export default async function handler(req, res) {
     const data = await aiRes.json();
     const reply =
       data?.choices?.[0]?.message?.content ||
-      "Sorry, I couldn't generate a response. Please try again.";
+      "Sorry, DoraHR couldn't process your request right now. Please try again.";
 
     return res.status(200).json({ response: reply, demoMode: false });
   } catch (error) {

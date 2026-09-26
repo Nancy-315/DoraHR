@@ -77,12 +77,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid request: "messages" array is required.' });
     }
 
-    // Identify configured AI API key
-    // Primary: OPENAI_API_KEY
-    // Also supports: AI_API_KEY, GROQ_API_KEY, GEMINI_API_KEY
-    const openaiKey = process.env.OPENAI_API_KEY || process.env.AI_API_KEY;
-    const groqKey = process.env.GROQ_API_KEY;
-    const geminiKey = process.env.GEMINI_API_KEY;
+    // Identify configured AI API key (Trim whitespace/newlines)
+    const rawOpenaiKey = process.env.OPENAI_API_KEY || process.env.AI_API_KEY;
+    const openaiKey = rawOpenaiKey ? rawOpenaiKey.trim() : null;
+    const groqKey = process.env.GROQ_API_KEY ? process.env.GROQ_API_KEY.trim() : null;
+    const geminiKey = process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.trim() : null;
 
     const activeApiKey = openaiKey || groqKey || geminiKey;
 
@@ -97,7 +96,7 @@ export default async function handler(req, res) {
 
     // 1. Google Gemini Provider
     if (geminiKey && !openaiKey && !groqKey) {
-      const model = process.env.AI_MODEL || 'gemini-1.5-flash';
+      const model = (process.env.AI_MODEL || 'gemini-1.5-flash').trim();
       const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
 
       const contents = [];
@@ -108,7 +107,6 @@ export default async function handler(req, res) {
         });
       }
 
-      // Ensure conversation starts with user turn
       if (contents.length > 0 && contents[0].role !== 'user') {
         contents.unshift({ role: 'user', parts: [{ text: 'Hello DoraHR' }] });
       }
@@ -131,7 +129,19 @@ export default async function handler(req, res) {
       if (!geminiRes.ok) {
         const errText = await geminiRes.text();
         console.error('Gemini API Error:', geminiRes.status, errText);
-        throw new Error(`AI Provider returned error status ${geminiRes.status}`);
+        let parsedErr = {};
+        try { parsedErr = JSON.parse(errText); } catch (e) {}
+        const safeMessage = String(parsedErr?.error?.message || errText).replace(/AIzaSy[a-zA-Z0-9_-]+/g, '[REDACTED]');
+        
+        return res.status(geminiRes.status).json({
+          error: "Sorry, DoraHR couldn't process your request right now. Please try again.",
+          diagnostic: {
+            provider: 'Google Gemini',
+            status: geminiRes.status,
+            message: safeMessage,
+            model: model
+          }
+        });
       }
 
       const geminiData = await geminiRes.json();
@@ -146,10 +156,10 @@ export default async function handler(req, res) {
     const isGroq = Boolean(groqKey && !openaiKey);
     const apiKey = isGroq ? groqKey : openaiKey;
     const apiBaseUrl =
-      process.env.AI_BASE_URL ||
+      process.env.AI_BASE_URL ? process.env.AI_BASE_URL.trim() :
       (isGroq ? 'https://api.groq.com/openai/v1' : 'https://api.openai.com/v1');
     const defaultModel = isGroq ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini';
-    const model = process.env.AI_MODEL || defaultModel;
+    const model = (process.env.AI_MODEL || defaultModel).trim();
 
     const formattedMessages = [
       { role: 'system', content: DORAH_SYSTEM_PROMPT },
@@ -176,7 +186,24 @@ export default async function handler(req, res) {
     if (!aiRes.ok) {
       const errText = await aiRes.text();
       console.error('AI API Error:', aiRes.status, errText);
-      throw new Error(`AI Provider returned error status ${aiRes.status}`);
+      let parsedErr = {};
+      try { parsedErr = JSON.parse(errText); } catch (e) {}
+
+      const errMessage = parsedErr?.error?.message || errText;
+      const errCode = parsedErr?.error?.code || parsedErr?.error?.type || `HTTP_${aiRes.status}`;
+      // Never expose the secret API key in responses
+      const safeMessage = String(errMessage).replace(/sk-[a-zA-Z0-9_-]+/g, '[REDACTED_KEY]');
+
+      return res.status(aiRes.status).json({
+        error: "Sorry, DoraHR couldn't process your request right now. Please try again.",
+        diagnostic: {
+          provider: isGroq ? 'Groq' : 'OpenAI',
+          status: aiRes.status,
+          code: errCode,
+          message: safeMessage,
+          model: model
+        }
+      });
     }
 
     const data = await aiRes.json();

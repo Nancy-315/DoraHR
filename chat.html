@@ -937,11 +937,28 @@
 
         removeTypingIndicator();
 
-        if (!response.ok) {
-          throw new Error(`Server returned HTTP ${response.status}`);
-        }
+        let data = null;
+        try {
+          data = await response.json();
+        } catch (e) {}
 
-        const data = await response.json();
+        if (!response.ok) {
+          if (data && data.diagnostic) {
+            const diag = data.diagnostic;
+            if (diag.code === 'credit_balance_exhausted' || diag.status === 429) {
+              showErrorCard(`OpenAI API Notice: Your OpenAI account has exhausted its credit balance ($0.00). Please add billing credits at platform.openai.com/settings/organization/billing to enable live AI responses.`, text);
+              return;
+            } else if (diag.status === 401) {
+              showErrorCard(`OpenAI API Notice: Invalid API key. Please check your OPENAI_API_KEY in Vercel.`, text);
+              return;
+            } else if (diag.message) {
+              showErrorCard(`AI Provider Notice: ${diag.message}`, text);
+              return;
+            }
+          }
+          showErrorCard("Sorry, DoraHR couldn't process your request right now. Please try again.", text);
+          return;
+        }
 
         if (data.demoMode) {
           demoBanner.classList.add('visible');

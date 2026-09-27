@@ -41,7 +41,7 @@ Add ONE of the following in your **Vercel Project Settings > Environment Variabl
 | Variable | Description |
 |---|---|
 | `AI_API_KEY` or `OPENAI_API_KEY` | Your OpenAI API key (defaults to `gpt-4o-mini`) |
-| `GROQ_API_KEY` | (Optional) Your Groq API key (uses `llama-3.3-70b-versatile`) |
+| `GROQ_API_KEY` | (Optional) Your Groq API key (uses "openai/gpt-oss-120b") |
 | `GEMINI_API_KEY` | (Optional) Your Google Gemini API key (uses `gemini-1.5-flash`) |
 | `AI_MODEL` | (Optional) Specify a custom model name |
 | `AI_BASE_URL` | (Optional) Specify a custom OpenAI-compatible API base URL |

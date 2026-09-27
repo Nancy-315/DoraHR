@@ -118,16 +118,17 @@ export default async function handler(req, res) {
       });
     }
 
-    // Supported Gemini model (defaults to gemini-1.5-flash)
-    const model = (process.env.GEMINI_MODEL || process.env.AI_MODEL || 'gemini-1.5-flash').trim();
+    // Supported Gemini model (defaults to gemini-2.5-flash)
+    const model = (process.env.GEMINI_MODEL || process.env.AI_MODEL || 'gemini-2.5-flash').trim();
     const contents = formatMessagesForGemini(messages);
 
-    // List of candidate models/versions to try if 404
+    // List of currently supported Gemini models to try
     const endpointsToTry = [
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiKey}`,
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiKey}`,
-      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiKey}`
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${geminiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${geminiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${geminiKey}`
     ];
 
     let geminiRes = null;

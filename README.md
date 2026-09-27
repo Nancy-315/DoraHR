@@ -40,8 +40,8 @@ Add the following in your **Vercel Project Settings > Environment Variables**:
 
 | Variable | Description |
 |---|---|
-| `GEMINI_API_KEY` | Your Google Gemini API key from [aistudio.google.com](https://aistudio.google.com) (uses `gemini-1.5-flash`) |
-| `GEMINI_MODEL` | (Optional) Specify a custom Gemini model (defaults to `gemini-1.5-flash`) |
+| `GEMINI_API_KEY` | Your Google Gemini API key from [aistudio.google.com](https://aistudio.google.com) (uses `gemini-2.5-flash`) |
+| `GEMINI_MODEL` | (Optional) Specify a custom Gemini model (defaults to `gemini-2.5-flash`) |
 
 *Note: If no API key is set, the website operates seamlessly in Demo Mode.*
 

@@ -1,4 +1,4 @@
-// api/chat.js - DoraHR MBA Assistant Server-side AI Endpoint
+// api/chat.js - DoraHR MBA Assistant Server-side Gemini AI Endpoint
 
 const DORAH_SYSTEM_PROMPT = `You are DoraHR, an expert MBA HR Assistant. You assist MBA students, HR researchers, scholars, and management professionals with academic rigor and clear explanations.
 
@@ -43,6 +43,34 @@ STYLE GUIDELINES:
 - Provide real-world corporate examples (e.g. Tata, Infosys, Google, Unilever) wherever helpful.
 - Keep tone supportive, academic, professional, and clear.`;
 
+function formatMessagesForGemini(messages) {
+  const contents = [];
+  let lastRole = null;
+
+  for (const m of messages) {
+    const role = m.role === 'assistant' ? 'model' : 'user';
+    const text = String(m.content || '').trim();
+    if (!text) continue;
+
+    if (role === lastRole && contents.length > 0) {
+      contents[contents.length - 1].parts[0].text += '\n\n' + text;
+    } else {
+      contents.push({
+        role,
+        parts: [{ text }]
+      });
+      lastRole = role;
+    }
+  }
+
+  // Gemini requires the conversation history to start with a user turn
+  if (contents.length > 0 && contents[0].role !== 'user') {
+    contents.unshift({ role: 'user', parts: [{ text: 'Hello DoraHR' }] });
+  }
+
+  return contents;
+}
+
 export default async function handler(req, res) {
   // CORS Headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -77,145 +105,86 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid request: "messages" array is required.' });
     }
 
-    // Identify configured AI API key (Trim whitespace/newlines)
-    const rawOpenaiKey = process.env.OPENAI_API_KEY || process.env.AI_API_KEY;
-    const openaiKey = rawOpenaiKey ? rawOpenaiKey.trim() : null;
-    const groqKey = process.env.GROQ_API_KEY ? process.env.GROQ_API_KEY.trim() : null;
-    const geminiKey = process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.trim() : null;
-
-    const activeApiKey = openaiKey || groqKey || geminiKey;
+    // Google Gemini API Key
+    const rawGeminiKey = process.env.GEMINI_API_KEY;
+    const geminiKey = rawGeminiKey ? rawGeminiKey.trim() : null;
 
     // FALLBACK DEMO MODE
-    if (!activeApiKey) {
+    if (!geminiKey) {
       return res.status(200).json({
         response:
-          "DoraHR is currently running in demo mode. Configure the AI API key to enable live AI responses.",
+          "DoraHR is currently running in demo mode. Configure the GEMINI_API_KEY environment variable in Vercel to enable live AI responses.",
         demoMode: true
       });
     }
 
-    // 1. Google Gemini Provider
-    if (geminiKey && !openaiKey && !groqKey) {
-      const model = (process.env.AI_MODEL || 'gemini-1.5-flash').trim();
-      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
+    // Supported Gemini model (defaults to gemini-1.5-flash)
+    const model = (process.env.GEMINI_MODEL || process.env.AI_MODEL || 'gemini-1.5-flash').trim();
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
 
-      const contents = [];
-      for (const m of messages) {
-        contents.push({
-          role: m.role === 'assistant' ? 'model' : 'user',
-          parts: [{ text: String(m.content || '') }]
-        });
-      }
+    const contents = formatMessagesForGemini(messages);
 
-      if (contents.length > 0 && contents[0].role !== 'user') {
-        contents.unshift({ role: 'user', parts: [{ text: 'Hello DoraHR' }] });
-      }
-
-      const geminiRes = await fetch(geminiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: {
-            parts: [{ text: DORAH_SYSTEM_PROMPT }]
-          },
-          contents,
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 2048
-          }
-        })
-      });
-
-      if (!geminiRes.ok) {
-        const errText = await geminiRes.text();
-        console.error('Gemini API Error:', geminiRes.status, errText);
-        let parsedErr = {};
-        try { parsedErr = JSON.parse(errText); } catch (e) {}
-        const safeMessage = String(parsedErr?.error?.message || errText).replace(/AIzaSy[a-zA-Z0-9_-]+/g, '[REDACTED]');
-        
-        return res.status(geminiRes.status).json({
-          error: "Sorry, DoraHR couldn't process your request right now. Please try again.",
-          diagnostic: {
-            provider: 'Google Gemini',
-            status: geminiRes.status,
-            message: safeMessage,
-            model: model
-          }
-        });
-      }
-
-      const geminiData = await geminiRes.json();
-      const reply =
-        geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ||
-        "Sorry, DoraHR couldn't process your request right now. Please try again.";
-
-      return res.status(200).json({ response: reply, demoMode: false });
-    }
-
-    // 2. OpenAI (Primary) or Groq / OpenAI-Compatible Provider
-    const isGroq = Boolean(groqKey && !openaiKey);
-    const apiKey = isGroq ? groqKey : openaiKey;
-    const apiBaseUrl =
-      process.env.AI_BASE_URL ? process.env.AI_BASE_URL.trim() :
-      (isGroq ? 'https://api.groq.com/openai/v1' : 'https://api.openai.com/v1');
-    const defaultModel = isGroq ? 'llama-3.3-70b-versatile' : 'gpt-4o-mini';
-    const model = (process.env.AI_MODEL || defaultModel).trim();
-
-    const formattedMessages = [
-      { role: 'system', content: DORAH_SYSTEM_PROMPT },
-      ...messages.map((m) => ({
-        role: m.role === 'assistant' ? 'assistant' : 'user',
-        content: String(m.content || '')
-      }))
-    ];
-
-    const aiRes = await fetch(`${apiBaseUrl}/chat/completions`, {
+    const geminiRes = await fetch(geminiUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model,
-        messages: formattedMessages,
-        temperature: 0.7,
-        max_tokens: 2000
+        system_instruction: {
+          parts: [{ text: DORAH_SYSTEM_PROMPT }]
+        },
+        contents,
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 2048
+        }
       })
     });
 
-    if (!aiRes.ok) {
-      const errText = await aiRes.text();
-      console.error('AI API Error:', aiRes.status, errText);
+    if (!geminiRes.ok) {
+      const errText = await geminiRes.text();
+      console.error('Gemini API Error:', geminiRes.status, errText);
       let parsedErr = {};
       try { parsedErr = JSON.parse(errText); } catch (e) {}
 
       const errMessage = parsedErr?.error?.message || errText;
-      const errCode = parsedErr?.error?.code || parsedErr?.error?.type || `HTTP_${aiRes.status}`;
-      // Never expose the secret API key in responses
-      const safeMessage = String(errMessage).replace(/sk-[a-zA-Z0-9_-]+/g, '[REDACTED_KEY]');
+      const errStatus = parsedErr?.error?.status || `HTTP_${geminiRes.status}`;
 
-      return res.status(aiRes.status).json({
+      // Redact any sensitive key strings from error messages
+      const safeMessage = String(errMessage).replace(/AIzaSy[a-zA-Z0-9_-]+/g, '[REDACTED_KEY]');
+
+      return res.status(geminiRes.status).json({
         error: "Sorry, DoraHR couldn't process your request right now. Please try again.",
         diagnostic: {
-          provider: isGroq ? 'Groq' : 'OpenAI',
-          status: aiRes.status,
-          code: errCode,
+          provider: 'Google Gemini',
+          status: geminiRes.status,
+          code: errStatus,
           message: safeMessage,
           model: model
         }
       });
     }
 
-    const data = await aiRes.json();
-    const reply =
-      data?.choices?.[0]?.message?.content ||
-      "Sorry, DoraHR couldn't process your request right now. Please try again.";
+    const geminiData = await geminiRes.json();
+    const candidate = geminiData?.candidates?.[0];
+    let reply = candidate?.content?.parts?.[0]?.text;
+
+    if (!reply) {
+      if (candidate?.finishReason === 'SAFETY') {
+        reply = "I apologize, but I cannot provide a response to that question in accordance with safety guidelines. Please ask another question about MBA HR concepts, projects, or viva preparation.";
+      } else {
+        reply = "Sorry, DoraHR couldn't generate a response right now. Please try again.";
+      }
+    }
 
     return res.status(200).json({ response: reply, demoMode: false });
   } catch (error) {
     console.error('Chat endpoint error:', error);
+    const safeError = String(error?.message || error).replace(/AIzaSy[a-zA-Z0-9_-]+/g, '[REDACTED_KEY]');
     return res.status(500).json({
-      error: "Sorry, DoraHR couldn't process your request right now. Please try again."
+      error: "Sorry, DoraHR couldn't process your request right now. Please try again.",
+      diagnostic: {
+        provider: 'Google Gemini',
+        message: safeError
+      }
     });
   }
 }

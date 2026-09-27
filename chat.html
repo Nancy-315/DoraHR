@@ -624,7 +624,7 @@
 
   <!-- DEMO MODE BANNER -->
   <div id="demoBanner" class="demo-banner">
-    <span>⚠️ <strong>Demo Mode:</strong> DoraHR is currently running in demo mode. Configure the AI API key to enable live AI responses.</span>
+    <span>⚠️ <strong>Demo Mode:</strong> DoraHR is currently running in demo mode. Configure the GEMINI_API_KEY in Vercel to enable live AI responses.</span>
   </div>
 
   <!-- CHAT CONTAINER -->
@@ -945,14 +945,14 @@
         if (!response.ok) {
           if (data && data.diagnostic) {
             const diag = data.diagnostic;
-            if (diag.code === 'credit_balance_exhausted' || diag.status === 429) {
-              showErrorCard(`OpenAI API Notice: Your OpenAI account has exhausted its credit balance ($0.00). Please add billing credits at platform.openai.com/settings/organization/billing to enable live AI responses.`, text);
+            if (diag.status === 400 || diag.status === 401 || diag.code === 'INVALID_ARGUMENT' || diag.code === 'UNAUTHENTICATED') {
+              showErrorCard(`Gemini API Notice: Invalid API key or configuration. Please check your GEMINI_API_KEY in Vercel.`, text);
               return;
-            } else if (diag.status === 401) {
-              showErrorCard(`OpenAI API Notice: Invalid API key. Please check your OPENAI_API_KEY in Vercel.`, text);
+            } else if (diag.status === 429 || diag.code === 'RESOURCE_EXHAUSTED') {
+              showErrorCard(`Gemini API Notice: Rate limit reached. Please wait a moment and try again.`, text);
               return;
             } else if (diag.message) {
-              showErrorCard(`AI Provider Notice: ${diag.message}`, text);
+              showErrorCard(`Gemini API Notice: ${diag.message}`, text);
               return;
             }
           }

@@ -36,15 +36,12 @@ Live Website: [https://dora-hr.vercel.app](https://dora-hr.vercel.app)
 
 ## ⚙️ Environment Variables
 
-Add ONE of the following in your **Vercel Project Settings > Environment Variables**:
+Add the following in your **Vercel Project Settings > Environment Variables**:
 
 | Variable | Description |
 |---|---|
-| `AI_API_KEY` or `OPENAI_API_KEY` | Your OpenAI API key (defaults to `gpt-4o-mini`) |
-| `GROQ_API_KEY` | (Optional) Your Groq API key (uses 'openai/gpt-oss-120b') |
-| `GEMINI_API_KEY` | (Optional) Your Google Gemini API key (uses `gemini-1.5-flash`) |
-| `AI_MODEL` | (Optional) Specify a custom model name |
-| `AI_BASE_URL` | (Optional) Specify a custom OpenAI-compatible API base URL |
+| `GEMINI_API_KEY` | Your Google Gemini API key from [aistudio.google.com](https://aistudio.google.com) (uses `gemini-1.5-flash`) |
+| `GEMINI_MODEL` | (Optional) Specify a custom Gemini model (defaults to `gemini-1.5-flash`) |
 
 *Note: If no API key is set, the website operates seamlessly in Demo Mode.*
 

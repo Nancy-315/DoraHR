@@ -122,12 +122,11 @@ export default async function handler(req, res) {
     const model = (process.env.GEMINI_MODEL || process.env.AI_MODEL || 'gemini-2.5-flash').trim();
     const contents = formatMessagesForGemini(messages);
 
-    // List of currently supported Gemini models to try
+    // List of currently supported Gemini models to try in priority order
     const endpointsToTry = [
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${geminiKey}`,
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${geminiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${geminiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${geminiKey}`
     ];
 
@@ -157,8 +156,8 @@ export default async function handler(req, res) {
         break;
       } else {
         lastErrText = await resAttempt.text();
-        // If not a 404 (e.g. 400 Bad Key or 429), don't keep cycling models
-        if (resAttempt.status !== 404) {
+        // If critical auth error (400/401/403), stop cycling
+        if (resAttempt.status === 400 || resAttempt.status === 401 || resAttempt.status === 403) {
           geminiRes = resAttempt;
           break;
         }

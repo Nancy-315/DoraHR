@@ -108,8 +108,8 @@ export default async function handler(req, res) {
     }
 
     // Configured model with single fast fallback to stay well within Vercel execution limits
-    const primaryModel = (process.env.GEMINI_MODEL || 'gemini-2.5-flash').trim();
-    const fallbackModel = primaryModel === 'gemini-2.5-flash-lite' ? 'gemini-flash-latest' : 'gemini-2.5-flash-lite';
+    const primaryModel = (process.env.GEMINI_MODEL || 'gemini-flash-latest').trim();
+    const fallbackModel = primaryModel === 'gemini-flash-latest' ? 'gemini-2.5-flash' : 'gemini-flash-latest';
     const modelsToTry = [primaryModel, fallbackModel];
 
     const contents = formatMessagesForGemini(messages);
@@ -176,8 +176,8 @@ export default async function handler(req, res) {
     if (!geminiRes || !geminiRes.ok) {
       console.error('[Gemini All Candidates Failed]', lastErrorDetails);
 
-      if (lastStatus === 429) {
-        return res.status(429).json({
+      if (lastStatus === 429 || lastStatus === 503) {
+        return res.status(lastStatus).json({
           error: "DoraHR is temporarily busy. Please try again in a moment."
         });
       }

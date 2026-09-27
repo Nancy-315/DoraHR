@@ -107,11 +107,13 @@ export default async function handler(req, res) {
       });
     }
 
-    // Configured model with verified fallback
+    // Configured model with verified fallback models across tiers
     const configuredModel = (process.env.GEMINI_MODEL || '').trim();
     const candidateModels = [
       ...(configuredModel ? [configuredModel] : []),
       'gemini-flash-latest',
+      'gemini-2.5-flash-lite',
+      'gemini-2.5-flash',
       'gemini-pro-latest'
     ];
     const modelsToTry = [...new Set(candidateModels)];
@@ -127,7 +129,7 @@ export default async function handler(req, res) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${geminiKey}`;
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8500);
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
 
         const attempt = await fetch(url, {
           method: 'POST',
@@ -164,8 +166,12 @@ export default async function handler(req, res) {
 
           console.warn(`[Gemini Attempt Failed] Model: ${m}, Status: ${attempt.status}`, lastErrorDetails.message);
 
-          // Stop cycling if API key invalid, unauthorized, or rate limit/quota reached
-          if (attempt.status === 400 || attempt.status === 401 || attempt.status === 403 || attempt.status === 429) {
+          // Stop cycling only if API key itself is invalid or unauthorized
+          if (attempt.status === 400 && lastErrorDetails.message.includes('API key')) {
+            geminiRes = attempt;
+            break;
+          }
+          if (attempt.status === 401 || attempt.status === 403) {
             geminiRes = attempt;
             break;
           }
@@ -182,7 +188,11 @@ export default async function handler(req, res) {
 
       if (lastStatus === 429 || lastStatus === 503) {
         return res.status(lastStatus).json({
-          error: "DoraHR is temporarily busy. Please try again in a moment."
+          error: "DoraHR is temporarily busy. Please try again in a moment.",
+          diagnostic: {
+            status: lastStatus,
+            detail: lastErrorDetails?.message
+          }
         });
       }
       if (lastStatus === 404) {

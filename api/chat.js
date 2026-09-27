@@ -107,10 +107,14 @@ export default async function handler(req, res) {
       });
     }
 
-    // Configured model with single fast fallback to stay well within Vercel execution limits
-    const primaryModel = (process.env.GEMINI_MODEL || 'gemini-flash-latest').trim();
-    const fallbackModel = primaryModel === 'gemini-flash-latest' ? 'gemini-2.5-flash' : 'gemini-flash-latest';
-    const modelsToTry = [primaryModel, fallbackModel];
+    // Configured model with verified fallback
+    const configuredModel = (process.env.GEMINI_MODEL || '').trim();
+    const candidateModels = [
+      ...(configuredModel ? [configuredModel] : []),
+      'gemini-flash-latest',
+      'gemini-pro-latest'
+    ];
+    const modelsToTry = [...new Set(candidateModels)];
 
     const contents = formatMessagesForGemini(messages);
 
@@ -123,7 +127,7 @@ export default async function handler(req, res) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${geminiKey}`;
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 7000);
+        const timeoutId = setTimeout(() => controller.abort(), 8500);
 
         const attempt = await fetch(url, {
           method: 'POST',
@@ -160,8 +164,8 @@ export default async function handler(req, res) {
 
           console.warn(`[Gemini Attempt Failed] Model: ${m}, Status: ${attempt.status}`, lastErrorDetails.message);
 
-          // Stop cycling if API key itself is invalid or unauthorized
-          if (attempt.status === 400 || attempt.status === 401 || attempt.status === 403) {
+          // Stop cycling if API key invalid, unauthorized, or rate limit/quota reached
+          if (attempt.status === 400 || attempt.status === 401 || attempt.status === 403 || attempt.status === 429) {
             geminiRes = attempt;
             break;
           }

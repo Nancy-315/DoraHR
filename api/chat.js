@@ -107,14 +107,13 @@ export default async function handler(req, res) {
       });
     }
 
-    // Configured model with verified fallback models across tiers
+    // Configured model with verified high-quota Flash models
     const configuredModel = (process.env.GEMINI_MODEL || '').trim();
     const candidateModels = [
       ...(configuredModel ? [configuredModel] : []),
       'gemini-flash-latest',
       'gemini-2.5-flash-lite',
-      'gemini-2.5-flash',
-      'gemini-pro-latest'
+      'gemini-2.5-flash'
     ];
     const modelsToTry = [...new Set(candidateModels)];
 
@@ -188,11 +187,7 @@ export default async function handler(req, res) {
 
       if (lastStatus === 429 || lastStatus === 503) {
         return res.status(lastStatus).json({
-          error: "DoraHR is temporarily busy. Please try again in a moment.",
-          diagnostic: {
-            status: lastStatus,
-            detail: lastErrorDetails?.message
-          }
+          error: "DoraHR is temporarily busy. Please try again in a moment."
         });
       }
       if (lastStatus === 404) {

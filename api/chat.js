@@ -198,8 +198,7 @@ export default async function handler(req, res) {
       }
       if (lastStatus === 404) {
         return res.status(503).json({
-          error: "DoraHR is temporarily unavailable because of an AI model configuration issue.",
-          debug: lastErrorDetails
+          error: "DoraHR is temporarily unavailable because of an AI model configuration issue."
         });
       }
       if (lastStatus === 401 || lastStatus === 403 || (lastStatus === 400 && lastErrorDetails?.message?.includes('API key'))) {

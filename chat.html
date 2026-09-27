@@ -177,23 +177,6 @@
       background: #fef2f2;
     }
 
-    /* DEMO BANNER */
-    .demo-banner {
-      background: #fffbeb;
-      border-bottom: 1px solid #fde68a;
-      color: #92400e;
-      padding: 8px 16px;
-      font-size: 0.85rem;
-      text-align: center;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    .demo-banner.visible {
-      display: flex;
-    }
 
     /* MAIN CONTAINER */
     main {
@@ -350,8 +333,15 @@
     .typing-indicator {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 6px;
       padding: 10px 14px;
+    }
+
+    .typing-text {
+      font-size: 0.88rem;
+      color: #64748b;
+      font-weight: 500;
+      margin-right: 2px;
     }
 
     .typing-dot {
@@ -622,11 +612,6 @@
     </div>
   </header>
 
-  <!-- DEMO MODE BANNER -->
-  <div id="demoBanner" class="demo-banner">
-    <span>⚠️ <strong>Demo Mode:</strong> DoraHR is currently running in demo mode. Configure the GEMINI_API_KEY in Vercel to enable live AI responses.</span>
-  </div>
-
   <!-- CHAT CONTAINER -->
   <main>
     <div id="chatScroll" class="chat-scroll">
@@ -696,7 +681,6 @@
     const clearModal = document.getElementById('clearModal');
     const btnCancelClear = document.getElementById('btnCancelClear');
     const btnConfirmClear = document.getElementById('btnConfirmClear');
-    const demoBanner = document.getElementById('demoBanner');
 
     // Conversation state for multi-turn memory
     let conversationHistory = [];
@@ -866,6 +850,7 @@
       const content = document.createElement('div');
       content.className = 'msg-content typing-indicator';
       content.innerHTML = `
+        <span class="typing-text">Thinking...</span>
         <span class="typing-dot"></span>
         <span class="typing-dot"></span>
         <span class="typing-dot"></span>
@@ -943,39 +928,23 @@
         } catch (e) {}
 
         if (!response.ok) {
-          if (data && data.diagnostic) {
-            const diag = data.diagnostic;
-            if (diag.status === 400 || diag.status === 401 || diag.code === 'INVALID_ARGUMENT' || diag.code === 'UNAUTHENTICATED') {
-              showErrorCard(`Gemini API Notice: Invalid API key or configuration. Please check your GEMINI_API_KEY in Vercel.`, text);
-              return;
-            } else if (diag.status === 429 || diag.code === 'RESOURCE_EXHAUSTED') {
-              showErrorCard(`Gemini API Notice: Rate limit reached. Please wait a moment and try again.`, text);
-              return;
-            } else if (diag.message) {
-              showErrorCard(`Gemini API Notice: ${diag.message}`, text);
-              return;
-            }
-          }
-          showErrorCard("Sorry, DoraHR couldn't process your request right now. Please try again.", text);
+          const errMsg = (data && data.error) ? data.error : "Unable to connect right now. Please try again.";
+          showErrorCard(errMsg, text);
           return;
         }
 
-        if (data.demoMode) {
-          demoBanner.classList.add('visible');
-        }
-
-        if (data.response) {
+        if (data && data.response) {
           appendMessage('assistant', data.response);
           conversationHistory.push({ role: 'assistant', content: data.response });
-        } else if (data.error) {
+        } else if (data && data.error) {
           showErrorCard(data.error, text);
         } else {
-          showErrorCard("Unexpected response from DoraHR.", text);
+          showErrorCard("Something went wrong. Please try again.", text);
         }
       } catch (err) {
         console.error('Chat error:', err);
         removeTypingIndicator();
-        showErrorCard("Sorry, DoraHR couldn't process your request right now. Please try again.", text);
+        showErrorCard("Unable to connect right now. Please try again.", text);
       } finally {
         isGenerating = false;
         const hasText = chatInput.value.trim().length > 0;

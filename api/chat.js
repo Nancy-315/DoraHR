@@ -1,53 +1,44 @@
-// api/chat.js - DoraHR MBA Assistant Server-side Gemini AI Endpoint
+// api/chat.js - DoraHR MBA Assistant Serverless Endpoint for Google Gemini
 
-const DORAH_SYSTEM_PROMPT = `You are DoraHR, an expert MBA HR Assistant. You assist MBA students, HR researchers, scholars, and management professionals with academic rigor and clear explanations.
+const DORAH_SYSTEM_PROMPT = `You are DoraHR, an expert, encouraging, and academically grounded MBA HR Assistant. You assist MBA students, HR researchers, scholars, and management professionals with clarity and practical rigor.
 
-CORE CAPABILITIES & SUBJECT DOMAINS:
-1. Human Resource Management (HRM):
-- HR Analytics & People Analytics (attrition rate, cost per hire, training ROI, eNPS, predictive workforce analytics)
-- Recruitment & Selection (competency mapping, job descriptions, ATS, structured interviews)
-- Training and Development (ADDIE framework, Kirkpatrick's 4 levels of training evaluation)
-- Performance Management (KPIs, OKRs, 360-degree feedback, Bell Curve / forced distribution)
-- Compensation and Benefits (job evaluation, Hay system, wage structures, incentive models)
-- Employee Engagement (Gallup Q12, employee morale, retention strategies)
-- Talent Management & Workforce Planning (HRP, Markov matrix, 9-box grid, succession planning)
-- Labour Laws & Industrial Relations (Factories Act 1948, Industrial Disputes Act 1947, Minimum Wages Act, Employees' Provident Fund (EPF), ESI Act, Payment of Gratuity Act, POSH Act 2013, Indian Labour Codes)
-- HRIS & HR Tech (SAP HCM, Workday, PeopleSoft, core HR modules)
-- Leadership, Team Building & Organizational Behavior
+YOUR CORE DOMAIN EXPERTISE:
+1. MBA Human Resource Management:
+- Core Functions: Recruitment & Selection (competency mapping, structured interviews, job analysis, ATS), Training & Development (ADDIE framework, Kirkpatrick's 4 levels), Performance Management (KPIs, OKRs, 360-degree appraisal, Bell Curve / forced distribution), Compensation & Benefits (job evaluation, Hay system, wage structures, incentive models), Employee Engagement (Gallup Q12, retention tactics), Employee Relations & Industrial Relations (trade unions, collective bargaining, grievance handling, strikes/lockouts).
+- Strategic & Contemporary HRM: Strategic HRM, Workforce Planning (Markov analysis, succession planning), HRIS & SAP HCM / PeopleSoft concepts, HR Analytics & People Analytics (turnover metrics, cost per hire, eNPS, predictive workforce analytics), Diversity Equity & Inclusion (DEI), Leadership styles, Team Building, and Organizational Behavior.
+- Labour Laws & Indian Labour Compliance: Factories Act 1948, Industrial Disputes Act 1947, Minimum Wages Act, Employees' Provident Fund (EPF), ESI Act, Payment of Gratuity Act, POSH Act 2013, and Indian Labour Codes. (Always clearly note that labour laws and government notifications can change and encourage verifying official gazettes for exact compliance).
 
-2. MBA Academic Projects & Research Methodology:
-- Problem formulation and framing SMART objectives
-- Research methodology (descriptive, empirical, exploratory)
-- Sampling design (sample size, stratified sampling, simple random, convenience)
-- Structured Questionnaires (5-point Likert scale constructs, demographic profiles)
-- Statistical analysis & data interpretation (Chi-square test, ANOVA, Correlation, Multiple Regression, Percentage analysis)
-- Writing Findings, Managerial Suggestions, Limitations, and Conclusions
-- MBA viva-voce questions and confident answers
+2. MBA Academic Projects, Assignments & Research:
+- Problem identification, framing SMART objectives, and formulating research questions.
+- Research Methodology: study design (descriptive/empirical), sampling techniques (simple random, stratified, convenience), sample size calculation.
+- Questionnaire Design: Structured constructs using 5-point Likert scales, demographic profiles.
+- Statistical Data Analysis & Interpretation: Chi-square test, ANOVA, Pearson Correlation, Multiple Regression, Percentage analysis.
+- Findings, Managerial Suggestions, Research Limitations, and Conclusion.
+- Viva-voce questions and confident, structured model answers.
 
-3. Internship Reports:
-- Company overview, industry profile, organizational hierarchy, HR workflow
-- HR practices observed (onboarding, payroll, benefits, welfare)
-- Daily/weekly learning log reflections
-- Internship viva preparation
+3. Internships & Employability:
+- Internship reports: Executive summary, company profile, industry overview, HR workflow observations, and weekly logbook reflections.
+- Resume writing, HR interview preparation, seminar presentations, and employability skills.
 
-4. MBA Exam Preparation & Marks-based Answering:
-- When a user asks an exam question or specifies marks, adjust depth accordingly:
+ANSWERING STYLE & GUIDELINES:
+- Simple, student-friendly, clear English.
+- Use clean headings, short readable paragraphs, and structured bullet points.
+- Provide real-world corporate examples (e.g. Tata, Infosys, Google, Unilever) wherever helpful.
+- When an exam question specifies marks, calibrate depth accordingly:
   * 2 Marks: Concise definition + 2 key points (3-4 sentences).
   * 5 Marks: Definition, core points/process, and brief explanation (moderately detailed).
   * 10 Marks: Detailed academic structure (Introduction, Core Concept/Model, Step-by-step Process, Advantages/Challenges, Real-world Industry Example, Conclusion).
   * 15 Marks: In-depth comprehensive essay with Theoretical Background, Frameworks, Implementation Challenges, Case Study Illustration, and Strategic Recommendations.
-
-STYLE GUIDELINES:
-- Simple, student-friendly, clear English.
-- Use clean headings, short readable paragraphs, and structured bullet points.
-- Provide real-world corporate examples (e.g. Tata, Infosys, Google, Unilever) wherever helpful.
+- Multilingual Support: When the user asks for Tamil, respond in Tamil. When the user asks for Tanglish, respond in Tanglish.
 - Keep tone supportive, academic, professional, and clear.`;
 
 function formatMessagesForGemini(messages) {
+  // Retain the last 20 messages to manage token size while maintaining multi-turn context
+  const recentMessages = Array.isArray(messages) ? messages.slice(-20) : [];
   const contents = [];
   let lastRole = null;
 
-  for (const m of messages) {
+  for (const m of recentMessages) {
     const role = m.role === 'assistant' ? 'model' : 'user';
     const text = String(m.content || '').trim();
     if (!text) continue;
@@ -63,7 +54,7 @@ function formatMessagesForGemini(messages) {
     }
   }
 
-  // Gemini requires the conversation history to start with a user turn
+  // Gemini requires the conversation to start with a user message
   if (contents.length > 0 && contents[0].role !== 'user') {
     contents.unshift({ role: 'user', parts: [{ text: 'Hello DoraHR' }] });
   }
@@ -109,94 +100,113 @@ export default async function handler(req, res) {
     const rawGeminiKey = process.env.GEMINI_API_KEY;
     const geminiKey = rawGeminiKey ? rawGeminiKey.trim() : null;
 
-    // FALLBACK DEMO MODE
     if (!geminiKey) {
-      return res.status(200).json({
-        response:
-          "DoraHR is currently running in demo mode. Configure the GEMINI_API_KEY environment variable in Vercel to enable live AI responses.",
-        demoMode: true
+      console.error('[DoraHR Server Error] Missing GEMINI_API_KEY environment variable in Vercel.');
+      return res.status(503).json({
+        error: "Sorry, DoraHR is temporarily unavailable. Please try again later."
       });
     }
 
-    // Supported Gemini model (defaults to gemini-2.5-flash)
-    const model = (process.env.GEMINI_MODEL || process.env.AI_MODEL || 'gemini-2.5-flash').trim();
+    // Configured model with fallback to current supported models
+    const configuredModel = (process.env.GEMINI_MODEL || '').trim();
+
+    // Priority list of currently supported models
+    const candidateModels = [
+      ...(configuredModel ? [configuredModel] : []),
+      'gemini-2.5-flash',
+      'gemini-flash-latest',
+      'gemini-2.5-flash-lite',
+      'gemini-3.1-pro-preview',
+      'gemini-flash-lite-latest',
+      'gemini-pro-latest'
+    ];
+    const uniqueModels = [...new Set(candidateModels)];
+
     const contents = formatMessagesForGemini(messages);
 
-    // List of currently supported Gemini models to try in priority order
-    const endpointsToTry = [
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${geminiKey}`,
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${geminiKey}`,
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${geminiKey}`
-    ];
-
     let geminiRes = null;
-    let successfulUrl = '';
-    let lastErrText = '';
+    let successfulModel = '';
+    let lastStatus = 0;
+    let lastErrorDetails = null;
 
-    for (const url of endpointsToTry) {
-      const resAttempt = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: {
-            parts: [{ text: DORAH_SYSTEM_PROMPT }]
-          },
-          contents,
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 2048
-          }
-        })
-      });
+    for (const m of uniqueModels) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${geminiKey}`;
+      try {
+        const attempt = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system_instruction: {
+              parts: [{ text: DORAH_SYSTEM_PROMPT }]
+            },
+            contents,
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 2048
+            }
+          })
+        });
 
-      if (resAttempt.ok) {
-        geminiRes = resAttempt;
-        successfulUrl = url;
-        break;
-      } else {
-        lastErrText = await resAttempt.text();
-        // If critical auth error (400/401/403), stop cycling
-        if (resAttempt.status === 400 || resAttempt.status === 401 || resAttempt.status === 403) {
-          geminiRes = resAttempt;
+        if (attempt.ok) {
+          geminiRes = attempt;
+          successfulModel = m;
           break;
+        } else {
+          lastStatus = attempt.status;
+          const text = await attempt.text();
+          let parsed = {};
+          try { parsed = JSON.parse(text); } catch (e) {}
+          lastErrorDetails = {
+            model: m,
+            status: attempt.status,
+            message: parsed?.error?.message || text
+          };
+
+          console.warn(`[Gemini Attempt Failed] Model: ${m}, Status: ${attempt.status}`, lastErrorDetails.message);
+
+          // Stop cycling if API key itself is invalid or unauthorized
+          if (attempt.status === 400 && lastErrorDetails.message.includes('API key')) {
+            geminiRes = attempt;
+            break;
+          }
+          if (attempt.status === 401 || attempt.status === 403) {
+            geminiRes = attempt;
+            break;
+          }
         }
+      } catch (networkErr) {
+        console.error(`[Gemini Network Error] Model: ${m}`, networkErr);
+        lastStatus = 504;
+        lastErrorDetails = { model: m, message: networkErr.message };
       }
     }
 
     if (!geminiRes || !geminiRes.ok) {
-      const errText = lastErrText || (geminiRes ? await geminiRes.text() : 'No response');
-      const errStatusCode = geminiRes ? geminiRes.status : 500;
-      console.error('Gemini API Error:', errStatusCode, errText);
+      console.error('[Gemini All Candidates Failed]', lastErrorDetails);
 
-      let parsedErr = {};
-      try { parsedErr = JSON.parse(errText); } catch (e) {}
+      if (lastStatus === 429) {
+        return res.status(429).json({
+          error: "DoraHR is temporarily busy. Please try again in a moment."
+        });
+      }
+      if (lastStatus === 404) {
+        return res.status(503).json({
+          error: "DoraHR is temporarily unavailable because of an AI model configuration issue."
+        });
+      }
+      if (lastStatus === 401 || lastStatus === 403 || (lastStatus === 400 && lastErrorDetails?.message?.includes('API key'))) {
+        return res.status(503).json({
+          error: "Sorry, DoraHR is temporarily unavailable. Please try again later."
+        });
+      }
+      if (lastStatus === 504 || lastStatus === 502) {
+        return res.status(502).json({
+          error: "Unable to connect right now. Please try again."
+        });
+      }
 
-      let availableModels = [];
-      try {
-        const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiKey}`);
-        if (listRes.ok) {
-          const listData = await listRes.json();
-          availableModels = (listData.models || [])
-            .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'))
-            .map(m => m.name.replace('models/', ''));
-        }
-      } catch (e) {}
-
-      const errMessage = parsedErr?.error?.message || errText;
-      const errStatus = parsedErr?.error?.status || `HTTP_${errStatusCode}`;
-      const safeMessage = String(errMessage).replace(/AIzaSy[a-zA-Z0-9_-]+/g, '[REDACTED_KEY]');
-
-      return res.status(errStatusCode).json({
-        error: "Sorry, DoraHR couldn't process your request right now. Please try again.",
-        diagnostic: {
-          provider: 'Google Gemini',
-          status: errStatusCode,
-          code: errStatus,
-          message: safeMessage,
-          attemptedModel: model,
-          availableModels: availableModels.slice(0, 10)
-        }
+      return res.status(500).json({
+        error: "Something went wrong. Please try again."
       });
     }
 
@@ -206,22 +216,17 @@ export default async function handler(req, res) {
 
     if (!reply) {
       if (candidate?.finishReason === 'SAFETY') {
-        reply = "I apologize, but I cannot provide a response to that question in accordance with safety guidelines. Please ask another question about MBA HR concepts, projects, or viva preparation.";
+        reply = "I apologize, but I cannot provide a response to that specific question in accordance with safety guidelines. Please ask another question about MBA HR concepts, projects, or viva preparation.";
       } else {
-        reply = "Sorry, DoraHR couldn't generate a response right now. Please try again.";
+        reply = "Something went wrong generating the response. Please try again.";
       }
     }
 
-    return res.status(200).json({ response: reply, demoMode: false });
+    return res.status(200).json({ response: reply });
   } catch (error) {
-    console.error('Chat endpoint error:', error);
-    const safeError = String(error?.message || error).replace(/AIzaSy[a-zA-Z0-9_-]+/g, '[REDACTED_KEY]');
+    console.error('[DoraHR Server Exception]', error);
     return res.status(500).json({
-      error: "Sorry, DoraHR couldn't process your request right now. Please try again.",
-      diagnostic: {
-        provider: 'Google Gemini',
-        message: safeError
-      }
+      error: "Something went wrong. Please try again."
     });
   }
 }

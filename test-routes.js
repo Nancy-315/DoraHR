@@ -155,14 +155,14 @@ async function runTests() {
       if (!res.text.includes('Back to DoraHR')) throw new Error('Missing Back button');
     });
 
-    // Test 5: POST /api/chat fallback/demo mode
-    await test('POST /api/chat returns proper demo mode when no key configured', async () => {
+    // Test 5: POST /api/chat when no key configured
+    await test('POST /api/chat returns friendly unavailable message when no key configured', async () => {
+      delete process.env.GEMINI_API_KEY;
       const res = await post('/api/chat', {
         messages: [{ role: 'user', content: 'What is HR analytics?' }]
       });
-      if (res.status !== 200) throw new Error(`Expected 200, got ${res.status}`);
-      if (!res.data.demoMode) throw new Error('Expected demoMode to be true');
-      if (!res.data.response.includes('demo mode')) throw new Error('Expected demo mode notice in response');
+      if (res.status !== 503) throw new Error(`Expected 503, got ${res.status}`);
+      if (!res.data.error.includes('temporarily unavailable')) throw new Error('Expected friendly unavailable notice');
     });
 
     // Test 6: POST /api/chat validation

@@ -120,45 +120,82 @@ export default async function handler(req, res) {
 
     // Supported Gemini model (defaults to gemini-1.5-flash)
     const model = (process.env.GEMINI_MODEL || process.env.AI_MODEL || 'gemini-1.5-flash').trim();
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`;
-
     const contents = formatMessagesForGemini(messages);
 
-    const geminiRes = await fetch(geminiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: {
-          parts: [{ text: DORAH_SYSTEM_PROMPT }]
-        },
-        contents,
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 2048
-        }
-      })
-    });
+    // List of candidate models/versions to try if 404
+    const endpointsToTry = [
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${geminiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiKey}`,
+      `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${geminiKey}`
+    ];
 
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text();
-      console.error('Gemini API Error:', geminiRes.status, errText);
+    let geminiRes = null;
+    let successfulUrl = '';
+    let lastErrText = '';
+
+    for (const url of endpointsToTry) {
+      const resAttempt = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          system_instruction: {
+            parts: [{ text: DORAH_SYSTEM_PROMPT }]
+          },
+          contents,
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 2048
+          }
+        })
+      });
+
+      if (resAttempt.ok) {
+        geminiRes = resAttempt;
+        successfulUrl = url;
+        break;
+      } else {
+        lastErrText = await resAttempt.text();
+        // If not a 404 (e.g. 400 Bad Key or 429), don't keep cycling models
+        if (resAttempt.status !== 404) {
+          geminiRes = resAttempt;
+          break;
+        }
+      }
+    }
+
+    if (!geminiRes || !geminiRes.ok) {
+      const errText = lastErrText || (geminiRes ? await geminiRes.text() : 'No response');
+      const errStatusCode = geminiRes ? geminiRes.status : 500;
+      console.error('Gemini API Error:', errStatusCode, errText);
+
       let parsedErr = {};
       try { parsedErr = JSON.parse(errText); } catch (e) {}
 
-      const errMessage = parsedErr?.error?.message || errText;
-      const errStatus = parsedErr?.error?.status || `HTTP_${geminiRes.status}`;
+      let availableModels = [];
+      try {
+        const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiKey}`);
+        if (listRes.ok) {
+          const listData = await listRes.json();
+          availableModels = (listData.models || [])
+            .filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes('generateContent'))
+            .map(m => m.name.replace('models/', ''));
+        }
+      } catch (e) {}
 
-      // Redact any sensitive key strings from error messages
+      const errMessage = parsedErr?.error?.message || errText;
+      const errStatus = parsedErr?.error?.status || `HTTP_${errStatusCode}`;
       const safeMessage = String(errMessage).replace(/AIzaSy[a-zA-Z0-9_-]+/g, '[REDACTED_KEY]');
 
-      return res.status(geminiRes.status).json({
+      return res.status(errStatusCode).json({
         error: "Sorry, DoraHR couldn't process your request right now. Please try again.",
         diagnostic: {
           provider: 'Google Gemini',
-          status: geminiRes.status,
+          status: errStatusCode,
           code: errStatus,
           message: safeMessage,
-          model: model
+          attemptedModel: model,
+          availableModels: availableModels.slice(0, 10)
         }
       });
     }

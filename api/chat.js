@@ -112,8 +112,8 @@ export default async function handler(req, res) {
     const candidateModels = [
       ...(configuredModel ? [configuredModel] : []),
       'gemini-flash-latest',
-      'gemini-2.5-flash-lite',
-      'gemini-2.5-flash'
+      'gemini-1.5-flash',
+      'gemini-2.0-flash'
     ];
     const modelsToTry = [...new Set(candidateModels)];
 
@@ -123,12 +123,13 @@ export default async function handler(req, res) {
     let successfulModel = '';
     let lastStatus = 0;
     let lastErrorDetails = null;
+    let hadRateLimit = false;
 
     for (const m of modelsToTry) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${geminiKey}`;
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 6000);
+        const timeoutId = setTimeout(() => controller.abort(), 6500);
 
         const attempt = await fetch(url, {
           method: 'POST',
@@ -165,7 +166,12 @@ export default async function handler(req, res) {
 
           console.warn(`[Gemini Attempt Failed] Model: ${m}, Status: ${attempt.status}`, lastErrorDetails.message);
 
-          // Stop cycling only if API key itself is invalid or unauthorized
+          // Stop cycling immediately on rate limit (429) or invalid credentials to avoid masking real errors
+          if (attempt.status === 429) {
+            hadRateLimit = true;
+            geminiRes = attempt;
+            break;
+          }
           if (attempt.status === 400 && lastErrorDetails.message.includes('API key')) {
             geminiRes = attempt;
             break;
@@ -185,9 +191,9 @@ export default async function handler(req, res) {
     if (!geminiRes || !geminiRes.ok) {
       console.error('[Gemini All Candidates Failed]', lastErrorDetails);
 
-      if (lastStatus === 429 || lastStatus === 503) {
-        return res.status(lastStatus).json({
-          error: "DoraHR is temporarily busy. Please try again in a moment."
+      if (hadRateLimit || lastStatus === 429 || lastStatus === 503) {
+        return res.status(429).json({
+          error: "DoraHR is temporarily busy. Please wait a moment and try again."
         });
       }
       if (lastStatus === 404) {

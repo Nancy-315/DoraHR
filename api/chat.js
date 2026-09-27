@@ -107,20 +107,10 @@ export default async function handler(req, res) {
       });
     }
 
-    // Configured model with fallback to current supported models
-    const configuredModel = (process.env.GEMINI_MODEL || '').trim();
-
-    // Priority list of currently supported models
-    const candidateModels = [
-      ...(configuredModel ? [configuredModel] : []),
-      'gemini-2.5-flash',
-      'gemini-flash-latest',
-      'gemini-2.5-flash-lite',
-      'gemini-3.1-pro-preview',
-      'gemini-flash-lite-latest',
-      'gemini-pro-latest'
-    ];
-    const uniqueModels = [...new Set(candidateModels)];
+    // Configured model with single fast fallback to stay well within Vercel execution limits
+    const primaryModel = (process.env.GEMINI_MODEL || 'gemini-2.5-flash').trim();
+    const fallbackModel = primaryModel === 'gemini-2.5-flash-lite' ? 'gemini-flash-latest' : 'gemini-2.5-flash-lite';
+    const modelsToTry = [primaryModel, fallbackModel];
 
     const contents = formatMessagesForGemini(messages);
 
@@ -129,12 +119,16 @@ export default async function handler(req, res) {
     let lastStatus = 0;
     let lastErrorDetails = null;
 
-    for (const m of uniqueModels) {
+    for (const m of modelsToTry) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${geminiKey}`;
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 7000);
+
         const attempt = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
           body: JSON.stringify({
             system_instruction: {
               parts: [{ text: DORAH_SYSTEM_PROMPT }]
@@ -146,6 +140,8 @@ export default async function handler(req, res) {
             }
           })
         });
+
+        clearTimeout(timeoutId);
 
         if (attempt.ok) {
           geminiRes = attempt;
@@ -165,17 +161,13 @@ export default async function handler(req, res) {
           console.warn(`[Gemini Attempt Failed] Model: ${m}, Status: ${attempt.status}`, lastErrorDetails.message);
 
           // Stop cycling if API key itself is invalid or unauthorized
-          if (attempt.status === 400 && lastErrorDetails.message.includes('API key')) {
-            geminiRes = attempt;
-            break;
-          }
-          if (attempt.status === 401 || attempt.status === 403) {
+          if (attempt.status === 400 || attempt.status === 401 || attempt.status === 403) {
             geminiRes = attempt;
             break;
           }
         }
       } catch (networkErr) {
-        console.error(`[Gemini Network Error] Model: ${m}`, networkErr);
+        console.error(`[Gemini Network/Timeout Error] Model: ${m}`, networkErr);
         lastStatus = 504;
         lastErrorDetails = { model: m, message: networkErr.message };
       }
